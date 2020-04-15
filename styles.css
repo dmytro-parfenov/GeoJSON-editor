@@ -1,0 +1,25 @@
+html, body {
+    height: 100%;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+.app {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.app .actions {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: #ffffff;
+    z-index: 1;
+}
+
+.app #map {
+    height: 100%;
+    width: 100%;
+}
