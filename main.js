@@ -12,8 +12,6 @@ function initMap() {
     map.data.setControlPosition(google.maps.ControlPosition.TOP_CENTER);
     map.data.setControls(['Polygon', 'Point', 'LineString']);
 
-    reloadGeoJson('https://storage.googleapis.com/mapsdevsite/json/google.json');
-
     map.addListener('click', () => {
         closeInfoWindow();
         unsetEditable(selectedFeature);
@@ -43,7 +41,8 @@ function initMap() {
     map.data.addListener('rightclick', event => {
         closeInfoWindow();
 
-        selectedFeature = event.feature;
+        unsetEditable(selectedFeature);
+        setEditable(event.feature);
 
         currentInfoWindow = new google.maps.InfoWindow({
             content: '<button onclick="remove()">remove</button>\n' +
@@ -115,12 +114,11 @@ function unsetEditable(feature) {
 function reloadGeoJson(url) {
     google.maps.event.removeListener(newFeatureListener);
 
-    map.data.forEach(feature => {
-        map.data.remove(feature);
-    });
+    clearData();
 
     map.data.loadGeoJson(url, null, event => {
         if (!event.length) {
+            console.log('Data is empty');
             return;
         }
 
@@ -163,5 +161,11 @@ function exportGeoJson() {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+    });
+}
+
+function clearData() {
+    map.data.forEach(feature => {
+        map.data.remove(feature);
     });
 }
