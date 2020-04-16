@@ -1,6 +1,6 @@
 ## GeoJSON editor
 
-Simple example that enables the user to create/edit and
+Simple example that allows to create/edit and
 import/export GeoJSON data by using the Google Maps
 JavaScript API.
 

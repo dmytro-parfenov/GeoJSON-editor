@@ -6,6 +6,8 @@ let bufferedFeature = null;
 
 function initMap() {
     map = new google.maps.Map(document.querySelector('#map'));
+    const latLngBounds = new google.maps.LatLngBounds({lat: 0, lng: -180}, {lat: 0, lng: 180});
+    map.fitBounds(latLngBounds);
 
     map.data.setControlPosition(google.maps.ControlPosition.TOP_CENTER);
     map.data.setControls(['Polygon', 'Point', 'LineString']);
@@ -13,16 +15,14 @@ function initMap() {
     reloadGeoJson('https://storage.googleapis.com/mapsdevsite/json/google.json');
 
     map.addListener('click', () => {
+        closeInfoWindow();
         unsetEditable(selectedFeature);
     });
 
     map.addListener('rightclick', event => {
+        closeInfoWindow();
         if (!bufferedFeature) {
             return;
-        }
-
-        if (currentInfoWindow) {
-            currentInfoWindow.close();
         }
 
         currentInfoWindow = new google.maps.InfoWindow({
@@ -34,14 +34,14 @@ function initMap() {
     });
 
     map.data.addListener('click', event => {
+        closeInfoWindow();
+
         unsetEditable(selectedFeature);
         setEditable(event.feature);
     });
 
     map.data.addListener('rightclick', event => {
-        if (currentInfoWindow) {
-            currentInfoWindow.close();
-        }
+        closeInfoWindow();
 
         selectedFeature = event.feature;
 
@@ -55,10 +55,16 @@ function initMap() {
     });
 }
 
-function remove() {
-    if (currentInfoWindow) {
-        currentInfoWindow.close();
+function closeInfoWindow() {
+    if (!currentInfoWindow) {
+        return;
     }
+
+    currentInfoWindow.close();
+}
+
+function remove() {
+    closeInfoWindow();
 
     if (!selectedFeature) {
         return;
@@ -69,17 +75,13 @@ function remove() {
 }
 
 function copy() {
-    if (currentInfoWindow) {
-        currentInfoWindow.close();
-    }
+    closeInfoWindow();
 
     bufferedFeature = selectedFeature;
 }
 
 function paste() {
-    if (currentInfoWindow) {
-        currentInfoWindow.close();
-    }
+    closeInfoWindow();
 
     if (!bufferedFeature) {
         return;
@@ -97,7 +99,7 @@ function setEditable(feature) {
 
     selectedFeature = feature;
 
-    map.data.overrideStyle(feature, {editable: true, draggable: true, fillColor: 'red'});
+    map.data.overrideStyle(feature, {editable: true, draggable: true});
 }
 
 function unsetEditable(feature) {
@@ -122,42 +124,28 @@ function reloadGeoJson(url) {
             return;
         }
 
-        const geometry = event[0].getGeometry();
-        const latLng = getGeometryCenter(geometry);
 
-        map.setCenter(latLng);
-        map.setZoom(4);
+        const latitudes = [];
+        const longitudes = [];
+
+        event.forEach(feature => {
+            feature.getGeometry().forEachLatLng(latLng => {
+                latitudes.push(latLng.toJSON().lat);
+                longitudes.push(latLng.toJSON().lng);
+            });
+        });
+
+        const sw = {lat: Math.min(...latitudes), lng: Math.min(...longitudes)};
+        const ne = {lat: Math.max(...latitudes), lng: Math.max(...longitudes)};
+
+        const latLngBounds = new google.maps.LatLngBounds(sw, ne);
+        map.fitBounds(latLngBounds);
 
         newFeatureListener = map.data.addListener('addfeature', event => {
             unsetEditable(selectedFeature);
             setEditable(event.feature);
         });
     });
-}
-
-function getGeometryCenter(geometry) {
-    const latitudes = [];
-    const longitudes = [];
-
-    geometry.forEachLatLng(latLng => {
-        latitudes.push(latLng.toJSON().lat);
-        longitudes.push(latLng.toJSON().lng);
-    });
-
-    return new google.maps.LatLng({
-        lat: getAvgValue(latitudes),
-        lng: getAvgValue(longitudes)
-    });
-}
-
-function getAvgValue(values) {
-    if (!values.length) {
-        return 0;
-    }
-
-    const total = values.reduce((previous, current) => previous += current, 0);
-
-    return total / values.length;
 }
 
 function importGeoJson(input) {
